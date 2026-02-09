@@ -63,34 +63,3 @@
             if (app) app.classList.remove('hidden-app');
             console.log("App Initialized Successfully");
         }
-
-        window.onload = hideLoader;
-
-        function toggleSettings() {
-            const modal = document.getElementById('settings-modal');
-            modal.classList.toggle('hidden');
-            modal.classList.toggle('flex');
-        }
-
-        function saveSettings() {
-            const key = document.getElementById('api-key').value;
-            localStorage.setItem('kurkure_key', key);
-            alert("API Key Save Ho Gayi!");
-            toggleSettings();
-        }
-
-        // Simple Chat Logic (Basic placeholder for now to ensure no crashes)
-        function sendMessage() {
-            const input = document.getElementById('user-input');
-            const text = input.value.trim();
-            if(!text) return;
-            
-            const container = document.getElementById('chat-container');
-            container.innerHTML += `<div class="flex justify-end"><div class="bg-orange-500 text-white p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm">${text}</div></div>`;
-            input.value = '';
-            container.scrollTop = container.scrollHeight;
-        }
-    </script>
-</body>
-                </html>
-                    
