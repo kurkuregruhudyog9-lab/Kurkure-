@@ -1,65 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Kurkure AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; z-index: 9999; font-family: sans-serif; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #ea580c; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .hidden-app { display: none !important; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background-color: #131314; 
+            color: #e3e3e3; 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+        }
+        .header { padding: 40px 20px 10px; text-align: center; }
+        h1 { 
+            font-size: 3.2rem; 
+            background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+        .tagline { color: #8e918f; font-size: 1.1rem; margin-top: 5px; }
+
+        #chatBox { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .msg { padding: 12px 18px; border-radius: 20px; max-width: 85%; font-size: 16px; line-height: 1.5; }
+        .user { align-self: flex-end; background-color: #303132; }
+        .ai { align-self: flex-start; background-color: transparent; border: 1px solid #444; }
+
+        .input-area { padding: 20px; background: #131314; }
+        .input-container {
+            max-width: 700px;
+            margin: 0 auto;
+            display: flex;
+            background: #1e1f20;
+            border-radius: 30px;
+            padding: 5px 15px;
+            border: 1px solid #444;
+        }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-size: 16px; }
+        button { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
-<body class="bg-gray-50">
+<body>
 
-    <div id="loading">
-        <div class="spinner"></div>
-        <p style="color: #ea580c; font-weight: bold;">Kurkure AI Tyar Ho Raha Hai...</p>
+    <div class="header">
+        <h1>Kurkure</h1>
+        <div class="tagline">I am for u</div>
     </div>
 
-    <div id="app" class="hidden-app min-h-screen flex flex-col">
-        <header class="p-4 bg-white border-b flex justify-between items-center shadow-sm">
-            <h1 class="text-xl font-bold text-orange-600 italic">Kurkure AI</h1>
-            <button onclick="toggleSettings()" class="p-2 bg-gray-100 rounded-lg">⚙️ Settings</button>
-        </header>
-
-        <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
-            <div class="text-center mt-10">
-                <div class="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">🔥</div>
-                <h2 class="text-lg font-bold">Namaste! Main hoon Kurkure AI.</h2>
-                <p class="text-sm text-gray-500">Settings mein jaakar API Key daalein aur chat shuru karein.</p>
-            </div>
-        </main>
-
-        <div class="p-4 border-t bg-white">
-            <div class="flex gap-2 max-w-4xl mx-auto">
-                <input type="text" id="user-input" placeholder="Yahan likhein..." class="flex-1 p-3 border rounded-xl outline-none focus:ring-2 ring-orange-500">
-                <button onclick="sendMessage()" id="send-btn" class="bg-orange-600 text-white px-4 py-2 rounded-xl font-bold">Bhejein</button>
-            </div>
-        </div>
+    <div id="chatBox">
+        <div class="msg ai">Namaste! Main Kurkure AI hoon. Main aapke liye kya kar sakta hoon?</div>
     </div>
 
-    <div id="settings-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-[10000]">
-        <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-xl">
-            <h3 class="text-lg font-bold mb-4">Settings</h3>
-            <input type="password" id="api-key" placeholder="OpenRouter API Key" class="w-full p-3 border rounded-lg mb-4 outline-none">
-            <button onclick="saveSettings()" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold">Save Karein</button>
-            <button onclick="toggleSettings()" class="w-full mt-2 text-gray-500 text-sm">Band Karein</button>
+    <div class="input-area">
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Ask Kurkure..." autocomplete="off">
+            <button id="sendBtn">SEND</button>
         </div>
     </div>
 
     <script>
-        // EMERGENCY FIX: Hides loader after 4 seconds regardless of script status
-        setTimeout(hideLoader, 4000);
+        const btn = document.getElementById("sendBtn");
+        const input = document.getElementById("userInput");
+        const box = document.getElementById("chatBox");
 
-        function hideLoader() {
-            const loader = document.getElementById('loading');
-            const app = document.getElementById('app');
-            if (loader) loader.style.display = 'none';
-            if (app) app.classList.remove('hidden-app');
-            console.log("App Initialized Successfully");
+        function chat() {
+            const val = input.value.trim();
+            if (val !== "") {
+                box.innerHTML += `<div class="msg user">${val}</div>`;
+                input.value = "";
+                box.scrollTop = box.scrollHeight;
+
+                setTimeout(() => {
+                    box.innerHTML += `<div class="msg ai"><b>Kurkure:</b> Tedha hai par sahi hai! Aapne pucha: ${val}</div>`;
+                    box.scrollTop = box.scrollHeight;
+                }, 600);
+            }
         }
+
+        btn.onclick = chat;
+        input.onkeypress = (e) => { if(e.key === 'Enter') chat(); };
+    </script>
+</body>
+</html>
