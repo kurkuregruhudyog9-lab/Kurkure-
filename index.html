@@ -1,57 +1,101 @@
-<script>
-    const btn = document.getElementById("sendBtn");
-    const input = document.getElementById("userInput");
-    const box = document.getElementById("chatBox");
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Kurkure AI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #131314; color: #e3e3e3; font-family: 'Segoe UI', Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        .header { padding: 40px 20px 10px; text-align: center; }
+        h1 { font-size: 3.2rem; background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+        .tagline { color: #8e918f; font-size: 1.1rem; margin-top: 5px; }
+        #chatBox { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 800px; width: 100%; margin: 0 auto; }
+        .msg { padding: 12px 18px; border-radius: 20px; max-width: 85%; font-size: 16px; line-height: 1.5; word-wrap: break-word; }
+        .user { align-self: flex-end; background-color: #303132; color: white; }
+        .ai { align-self: flex-start; background-color: transparent; border: 1px solid #444; color: #e3e3e3; }
+        .input-area { padding: 20px; background: #131314; }
+        .input-container { max-width: 700px; margin: 0 auto; display: flex; background: #1e1f20; border-radius: 30px; padding: 5px 15px; border: 1px solid #444; }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-size: 16px; }
+        button { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-    // AAPKI KEY
-    const KEY = "AIzaSyDFH2QXyJsIaSDd0UM-zUH3Sajgxqi4JWU";
-    
-    // Yahan hum model name change karke bhi try kar sakte hain
-    const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`;
+    <div class="header">
+        <h1>Kurkure</h1>
+        <div class="tagline">Tedha hai par sahi hai!</div>
+    </div>
 
-    async function chat() {
-        const prompt = input.value.trim();
-        if (!prompt) return;
+    <div id="chatBox">
+        <div class="msg ai">Namaste! Main Kurkure AI hoon. Nayi key ke saath main taiyaar hoon! Puchiye kya puchna hai?</div>
+    </div>
 
-        box.innerHTML += `<div class="msg user">${prompt}</div>`;
-        input.value = "";
-        box.scrollTop = box.scrollHeight;
+    <div class="input-area">
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Kuch puchiye..." autocomplete="off">
+            <button id="sendBtn">SEND</button>
+        </div>
+    </div>
 
-        const loadingMsg = document.createElement("div");
-        loadingMsg.className = "msg ai";
-        loadingMsg.innerHTML = "<b>Kurkure:</b> Soch raha hoon...";
-        box.appendChild(loadingMsg);
+    <script>
+        const btn = document.getElementById("sendBtn");
+        const input = document.getElementById("userInput");
+        const box = document.getElementById("chatBox");
 
-        try {
-            const response = await fetch(URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+        // Nayi API Key yahan hai
+        const KEY = "AIzaSyA0SzQNePegNm9OHLK_CAZ8I_r5KTexMQA";
+        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`;
 
-            const data = await response.json();
-            
-            // Debugging: Console check karein agar error aaye
-            console.log("API Response:", data);
+        async function chat() {
+            const prompt = input.value.trim();
+            if (!prompt) return;
 
-            if (data.error) {
-                loadingMsg.innerHTML = `<b>Kurkure Error:</b> ${data.error.message}`;
-            } else if (data.candidates && data.candidates[0].content) {
-                const aiText = data.candidates[0].content.parts[0].text;
-                loadingMsg.innerHTML = `<b>Kurkure:</b> ${aiText}`;
-            } else {
-                loadingMsg.innerHTML = "<b>Kurkure:</b> Google ne khali jawab bheja hai. API Key settings check karein.";
+            // 1. User Message
+            box.innerHTML += `<div class="msg user">${prompt}</div>`;
+            input.value = "";
+            box.scrollTop = box.scrollHeight;
+
+            // 2. Loading
+            const loadingMsg = document.createElement("div");
+            loadingMsg.className = "msg ai";
+            loadingMsg.innerHTML = "<b>Kurkure:</b> Soch raha hoon...";
+            box.appendChild(loadingMsg);
+            box.scrollTop = box.scrollHeight;
+
+            try {
+                const response = await fetch(URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    // Agar API se error aaye toh wo dikhao
+                    loadingMsg.innerHTML = `<b>Error:</b> ${data.error.message}`;
+                    console.error("API Error Details:", data.error);
+                } else if (data.candidates && data.candidates[0].content) {
+                    // Sahi Jawab
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    loadingMsg.innerHTML = `<b>Kurkure:</b> ${aiText}`;
+                } else {
+                    loadingMsg.innerHTML = "<b>Kurkure:</b> Maaf kijiye, Google ne jawab nahi bheja. Check karein ki key active hai ya nahi.";
+                }
+
+            } catch (error) {
+                loadingMsg.innerHTML = "<b>Kurkure:</b> Network issue! Internet check kijiye.";
+                console.error("Fetch Error:", error);
             }
-
-        } catch (error) {
-            loadingMsg.innerHTML = "<b>Kurkure:</b> Connection fail ho gaya!";
+            box.scrollTop = box.scrollHeight;
         }
-        box.scrollTop = box.scrollHeight;
-    }
 
-    btn.onclick = chat;
-    input.onkeypress = (e) => { if (e.key === 'Enter') chat(); };
-            </script>
-            
+        btn.onclick = chat;
+        input.onkeypress = (e) => { if (e.key === 'Enter') chat(); };
+    </script>
+</body>
+    </html>
+    
