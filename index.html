@@ -1,101 +1,220 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Kurkure AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Minecraft Jump</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #131314; color: #e3e3e3; font-family: 'Segoe UI', Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; }
-        .header { padding: 40px 20px 10px; text-align: center; }
-        h1 { font-size: 3.2rem; background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
-        .tagline { color: #8e918f; font-size: 1.1rem; margin-top: 5px; }
-        #chatBox { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-width: 800px; width: 100%; margin: 0 auto; }
-        .msg { padding: 12px 18px; border-radius: 20px; max-width: 85%; font-size: 16px; line-height: 1.5; word-wrap: break-word; }
-        .user { align-self: flex-end; background-color: #303132; color: white; }
-        .ai { align-self: flex-start; background-color: transparent; border: 1px solid #444; color: #e3e3e3; }
-        .input-area { padding: 20px; background: #131314; }
-        .input-container { max-width: 700px; margin: 0 auto; display: flex; background: #1e1f20; border-radius: 30px; padding: 5px 15px; border: 1px solid #444; }
-        input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-size: 16px; }
-        button { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000; position: fixed;
+            font-family: 'Courier New', monospace;
+        }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #000; }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+        
+        /* Menu & UI */
+        .overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; background: rgba(0,0,0,0.9); z-index: 100; 
+        }
+        .menu-btn { 
+            width: 80%; max-width: 300px; padding: 20px; margin: 10px; 
+            border: 4px solid #333; background: #555; color: white; 
+            font-size: 18px; font-weight: bold; cursor: pointer;
+            box-shadow: inset -4px -4px #222, inset 4px 4px #888;
+        }
+
+        /* ULTRA BIG BUTTONS FOR APP FEEL */
+        .controls { 
+            position: absolute; bottom: 30px; width: 100%; 
+            display: flex; justify-content: space-between; padding: 0 20px; z-index: 50; 
+        }
+        .btn { 
+            width: 120px; height: 120px; background: rgba(255,255,255,0.1); 
+            border: 3px solid rgba(255,255,255,0.3); border-radius: 20px; 
+            display: flex; align-items: center; justify-content: center; font-size: 50px;
+        }
+        .btn:active { background: rgba(255,255,255,0.4); transform: scale(0.9); }
+
+        #score-ui { 
+            position: absolute; top: 40px; left: 20px; 
+            font-size: 24px; color: white; text-shadow: 2px 2px #000; z-index: 10; 
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Kurkure</h1>
-        <div class="tagline">Tedha hai par sahi hai!</div>
+<div id="game-container">
+    <div id="score-ui">SCORE: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="level-menu" class="overlay">
+        <h1 style="color: #2ecc71; text-align: center;">MINECRAFT JUMP<br><span style="font-size:14px; color:#fff;">ULTRA APP EDITION</span></h1>
+        <button class="menu-btn" onclick="startGame('classic')">OVERWORLD</button>
+        <button class="menu-btn" onclick="startGame('sun')">THE NETHER</button>
+        <button class="menu-btn" onclick="startGame('moon')">THE END</button>
+        <p style="font-size: 10px; color: #666;">Add to Home Screen for Full Screen</p>
     </div>
 
-    <div id="chatBox">
-        <div class="msg ai">Namaste! Main Kurkure AI hoon. Nayi key ke saath main taiyaar hoon! Puchiye kya puchna hai?</div>
+    <div class="controls">
+        <div class="btn" onpointerdown="moveLeft(true)" onpointerup="moveLeft(false)">⬅️</div>
+        <div class="btn" onpointerdown="moveRight(true)" onpointerup="moveRight(false)">➡️</div>
     </div>
+</div>
 
-    <div class="input-area">
-        <div class="input-container">
-            <input type="text" id="userInput" placeholder="Kuch puchiye..." autocomplete="off">
-            <button id="sendBtn">SEND</button>
-        </div>
-    </div>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const scoreUI = document.getElementById("score-ui");
 
-    <script>
-        const btn = document.getElementById("sendBtn");
-        const input = document.getElementById("userInput");
-        const box = document.getElementById("chatBox");
+// Responsive Scaling
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
 
-        // Nayi API Key yahan hai
-        const KEY = "AIzaSyA0SzQNePegNm9OHLK_CAZ8I_r5KTexMQA";
-        const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`;
+// --- SOUNDS ---
+const audio = new (window.AudioContext || window.webkitAudioContext)();
+function playSfx(f, t, d) {
+    if(audio.state === 'suspended') audio.resume();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = t; o.frequency.value = f; g.gain.value = 0.1;
+    o.connect(g); g.connect(audio.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + d);
+    o.stop(audio.currentTime + d);
+}
 
-        async function chat() {
-            const prompt = input.value.trim();
-            if (!prompt) return;
+// --- GAME VARS ---
+let gameActive = false, score = 0, lastJet = 0, gravity = 0.5, jump = -16;
+let platforms = [], steve, jetpack = null, theme = 'classic';
+let mLeft = false, mRight = false;
 
-            // 1. User Message
-            box.innerHTML += `<div class="msg user">${prompt}</div>`;
-            input.value = "";
-            box.scrollTop = box.scrollHeight;
+const themes = {
+    classic: { bg: "#87CEEB", gTop: "#55aa55", gBot: "#795548", txt: "#000" },
+    sun: { bg: "#2c0e0e", gTop: "#ff4500", gBot: "#4a0000", txt: "#fff" },
+    moon: { bg: "#0a0a12", gTop: "#9b59b6", gBot: "#2d004d", txt: "#00d4ff" }
+};
 
-            // 2. Loading
-            const loadingMsg = document.createElement("div");
-            loadingMsg.className = "msg ai";
-            loadingMsg.innerHTML = "<b>Kurkure:</b> Soch raha hoon...";
-            box.appendChild(loadingMsg);
-            box.scrollTop = box.scrollHeight;
-
-            try {
-                const response = await fetch(URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.error) {
-                    // Agar API se error aaye toh wo dikhao
-                    loadingMsg.innerHTML = `<b>Error:</b> ${data.error.message}`;
-                    console.error("API Error Details:", data.error);
-                } else if (data.candidates && data.candidates[0].content) {
-                    // Sahi Jawab
-                    const aiText = data.candidates[0].content.parts[0].text;
-                    loadingMsg.innerHTML = `<b>Kurkure:</b> ${aiText}`;
-                } else {
-                    loadingMsg.innerHTML = "<b>Kurkure:</b> Maaf kijiye, Google ne jawab nahi bheja. Check karein ki key active hai ya nahi.";
-                }
-
-            } catch (error) {
-                loadingMsg.innerHTML = "<b>Kurkure:</b> Network issue! Internet check kijiye.";
-                console.error("Fetch Error:", error);
-            }
-            box.scrollTop = box.scrollHeight;
+class Steve {
+    constructor() { this.w = 35; this.h = 50; this.reset(); }
+    reset() { this.x = canvas.width/2 - 17; this.y = canvas.height - 200; this.vy = 0; this.isJet = false; }
+    draw() {
+        ctx.fillStyle = "#ffdbac"; ctx.fillRect(this.x+8, this.y, 18, 18); // Head
+        ctx.fillStyle = "#00ced1"; ctx.fillRect(this.x+4, this.y+18, 26, 16); // Shirt
+        ctx.fillStyle = "#3f51b5"; ctx.fillRect(this.x+8, this.y+34, 18, 16); // Pants
+        if(this.isJet) {
+            ctx.fillStyle = "#ffaa00";
+            ctx.fillRect(this.x-5, this.y+30, 6, 25); ctx.fillRect(this.x+this.w, this.y+30, 6, 25);
         }
+    }
+}
 
-        btn.onclick = chat;
-        input.onkeypress = (e) => { if (e.key === 'Enter') chat(); };
-    </script>
+class Platform {
+    constructor(y, isStart = false) {
+        this.w = 90; this.h = 22;
+        this.x = isStart ? canvas.width/2 - 45 : Math.random() * (canvas.width - 90);
+        this.y = y;
+        this.isMoving = (!isStart && score >= 100 && Math.random() < 0.4);
+        this.speed = (Math.random() < 0.5 ? 2.5 : -2.5);
+    }
+    draw() {
+        let t = themes[theme];
+        ctx.fillStyle = t.gBot; ctx.fillRect(this.x, this.y, this.w, this.h);
+        ctx.fillStyle = t.gTop; ctx.fillRect(this.x, this.y, this.w, 7);
+    }
+}
+
+function startGame(t) {
+    theme = t;
+    document.getElementById("level-menu").style.display = "none";
+    score = 0; lastJet = 0;
+    steve = new Steve();
+    platforms = [new Platform(canvas.height - 100, true)];
+    for(let i=1; i<8; i++) platforms.push(new Platform(canvas.height - 100 - (i*120)));
+    gameActive = true;
+    steve.vy = jump;
+    playSfx(200, 'square', 0.2);
+    loop();
+}
+
+function moveLeft(b) { mLeft = b; }
+function moveRight(b) { mRight = b; }
+
+function loop() {
+    if(!gameActive) return;
+    let t = themes[theme];
+    ctx.fillStyle = t.bg; ctx.fillRect(0,0,canvas.width, canvas.height);
+
+    if(steve.isJet) {
+        steve.vy = -12;
+        if(score > lastJet + 70) steve.isJet = false;
+    } else {
+        steve.vy += gravity;
+    }
+    steve.y += steve.vy;
+
+    if(mLeft) steve.x -= 8; if(mRight) steve.x += 8;
+    if(steve.x > canvas.width) steve.x = -30; if(steve.x < -30) steve.x = canvas.width;
+
+    if(steve.y < canvas.height/2) {
+        let d = canvas.height/2 - steve.y;
+        steve.y = canvas.height/2;
+        score += d/10;
+        platforms.forEach(p => {
+            p.y += d;
+            if(p.y > canvas.height) {
+                p.y = 0; p.x = Math.random() * (canvas.width - 90);
+                p.isMoving = (score >= 100 && Math.random() < 0.4);
+            }
+        });
+        if(jetpack) jetpack.y += d;
+    }
+
+    if(Math.floor(score/100) > Math.floor(lastJet/100)) {
+        lastJet = score;
+        jetpack = { x: platforms[platforms.length-1].x+30, y: platforms[platforms.length-1].y-40 };
+    }
+
+    platforms.forEach(p => {
+        if(p.isMoving) {
+            p.x += p.speed;
+            if(p.x <= 0 || p.x + p.w >= canvas.width) p.speed *= -1;
+        }
+        p.draw();
+        if(steve.vy > 0 && steve.x+30 > p.x && steve.x < p.x+p.w && steve.y+steve.h > p.y && steve.y+steve.h < p.y+20) {
+            steve.vy = jump;
+            playSfx(150, 'square', 0.1);
+        }
+    });
+
+    if(jetpack) {
+        ctx.fillStyle = "#00ffff"; ctx.fillRect(jetpack.x, jetpack.y, 30, 30);
+        if(steve.x < jetpack.x+30 && steve.x+30 > jetpack.x && steve.y < jetpack.y+30 && steve.y+steve.h > jetpack.y) {
+            steve.isJet = true; lastJet = score; jetpack = null;
+            playSfx(600, 'sine', 0.4);
+        }
+    }
+
+    steve.draw();
+    scoreUI.innerText = `SCORE: ${Math.floor(score)}`;
+    scoreUI.style.color = t.txt;
+
+    if(steve.y > canvas.height) {
+        playSfx(80, 'sawtooth', 0.5);
+        gameActive = false;
+        setTimeout(() => { location.reload(); }, 1000);
+    } else {
+        requestAnimationFrame(loop);
+    }
+}
+</script>
 </body>
     </html>
     
